@@ -1,30 +1,32 @@
-const STORAGE_KEY = 'fischerAppState_v1';
+const STORAGE_KEY = 'fischerAppState_v2';
 
 const i18n = {
   en: {
     nav: { dashboard: "Dashboard", work: "Work", people: "People", settings: "Settings" },
     dashboard: { title:"Dashboard", pre:"Before 00:00", post:"After 00:00", high:"HIGH priority", addLog:"Add shift note", closeShift:"Close shift", empty:"Nothing here yet." },
-    work: { title:"Work items", subtitle:"Categories are managed in Settings.", addItem:"Add work item", filters:"Filters", category:"Category", person:"Person", priority:"Priority", status:"Status", section:"Time section", pre:"Before 00:00", post:"After 00:00", all:"All", none:"None" },
+    work: { title:"Work items", subtitle:"Categories are managed in Settings.", addItem:"Add work item", filters:"Filters", category:"Category", people:"People", priority:"Priority", status:"Status", section:"Time section", pre:"Before 00:00", post:"After 00:00", all:"All", none:"None" },
     people: { title:"People", subtitle:"What each person did (notes + linked items).", addNote:"Add note", empty:"No notes yet." },
     settings: { title:"Settings", appName:"App name", theme:"Theme", language:"Language", categories:"Categories", people:"People", backup:"Backup", export:"Export data", import:"Import data", reset:"Reset data", warnReset:"Warning: this deletes all local data on this device." },
-    common: { save:"Save", cancel:"Cancel", delete:"Delete", edit:"Edit", markDone:"Done", back:"Back", notes:"Operational note", title:"Title", optional:"optional", confirmDelete:"Delete?", confirmReset:"Are you sure you want to delete all local data?" },
+    common: { save:"Save", cancel:"Cancel", delete:"Delete", edit:"Edit", markDone:"Done", notes:"Operational note", title:"Title", optional:"optional", confirmDelete:"Delete?", confirmReset:"Are you sure you want to delete all local data?" },
     enums: { priority:{normal:"normal", high:"high", critical:"critical"}, status:{pending:"pending", ongoing:"ongoing", done:"done"} },
-    modals: { newItem:"New work item", editItem:"Edit work item", shiftNote:"Shift note", closeShift:"Close shift", personNote:"Person note", editCategory:"Edit category", newCategory:"New category", editPerson:"Edit person", newPerson:"New person" }
+    modals: { newItem:"New work item", editItem:"Edit work item", shiftNote:"Shift note", closeShift:"Close shift", personNote:"Person note", editCategory:"Edit category", newCategory:"New category", editPerson:"Edit person", newPerson:"New person" },
+    tips: { multiAssign:"Tip: You can assign multiple people to the same item (e.g., pallets)." }
   },
   pl: {
     nav: { dashboard:"Dashboard", work:"Praca", people:"Osoby", settings:"Ustawienia" },
     dashboard: { title:"Dashboard", pre:"Do godziny 0:00", post:"After 0:00", high:"Priorytet HIGH", addLog:"Dodaj notatkę zmiany", closeShift:"Zamknij zmianę", empty:"Na razie nic tutaj nie ma." },
-    work: { title:"Elementy pracy", subtitle:"Kategorie edytujesz tylko w Ustawieniach.", addItem:"Dodaj element", filters:"Filtry", category:"Kategoria", person:"Osoba", priority:"Priorytet", status:"Status", section:"Czas", pre:"Do 0:00", post:"Po 0:00", all:"Wszystko", none:"Brak" },
+    work: { title:"Elementy pracy", subtitle:"Kategorie edytujesz tylko w Ustawieniach.", addItem:"Dodaj element", filters:"Filtry", category:"Kategoria", people:"Osoby", priority:"Priorytet", status:"Status", section:"Czas", pre:"Do 0:00", post:"Po 0:00", all:"Wszystko", none:"Brak" },
     people: { title:"Osoby", subtitle:"Co dokładnie robiła dana osoba (notatki + powiązane elementy).", addNote:"Dodaj notatkę", empty:"Brak notatek." },
     settings: { title:"Ustawienia", appName:"Nazwa aplikacji", theme:"Motyw", language:"Język", categories:"Kategorie", people:"Osoby", backup:"Kopia", export:"Eksport danych", import:"Import danych", reset:"Reset danych", warnReset:"Uwaga: usuwa wszystkie dane na tym urządzeniu." },
-    common: { save:"Zapisz", cancel:"Anuluj", delete:"Usuń", edit:"Edytuj", markDone:"Zrobione", back:"Wróć", notes:"Notatka operacyjna", title:"Tytuł", optional:"opcjonalnie", confirmDelete:"Usunąć?", confirmReset:"Na pewno usunąć wszystkie dane?" },
+    common: { save:"Zapisz", cancel:"Anuluj", delete:"Usuń", edit:"Edytuj", markDone:"Zrobione", notes:"Notatka operacyjna", title:"Tytuł", optional:"opcjonalnie", confirmDelete:"Usunąć?", confirmReset:"Na pewno usunąć wszystkie dane?" },
     enums: { priority:{normal:"normal", high:"high", critical:"critical"}, status:{pending:"pending", ongoing:"ongoing", done:"done"} },
-    modals: { newItem:"Nowy element", editItem:"Edytuj element", shiftNote:"Notatka zmiany", closeShift:"Zamknij zmianę", personNote:"Notatka osoby", editCategory:"Edytuj kategorię", newCategory:"Nowa kategoria", editPerson:"Edytuj osobę", newPerson:"Nowa osoba" }
+    modals: { newItem:"Nowy element", editItem:"Edytuj element", shiftNote:"Notatka zmiany", closeShift:"Zamknij zmianę", personNote:"Notatka osoby", editCategory:"Edytuj kategorię", newCategory:"Nowa kategoria", editPerson:"Edytuj osobę", newPerson:"Nowa osoba" },
+    tips: { multiAssign:"Tip: Możesz przypisać kilka osób do jednego elementu (np. palety)." }
   }
 };
 
 let state = {
-  settings: { appName:"Fischer", theme:"dark", lang:"en", workFilters:{categoryId:"all",personId:"all",priority:"all",status:"all",section:"all"} },
+  settings: { appName:"Fischer", theme:"dark", lang:"en", workFilters:{categoryId:"all", personId:"all", priority:"all", status:"all", section:"all"} },
   categories: [],
   people: [],
   workItems: [],
@@ -34,21 +36,45 @@ let state = {
 };
 
 function t(path){
-  const dict = i18n[state.settings.lang] || i18n.en;
-  return path.split(".").reduce((a,k)=> (a&&a[k]!=null)?a[k]:null, dict) ?? path;
+  const dict = i18n[state.settings?.lang] || i18n.en;
+  return path.split(".").reduce((a,k)=> (a && a[k]!=null)?a[k]:null, dict) ?? path;
 }
+
 function nowISO(){ return new Date().toISOString(); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
-function formatTime(iso){ try{ const d=new Date(iso); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }catch{return iso;} }
-function escapeHtml(s){ if(s==null) return ""; return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+function escapeHtml(s){
+  if(s==null) return "";
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,"&quot;"); }
 function slug(name){ return name.toLowerCase().trim().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,""); }
 
-function loadState(){
-  try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw){ state=Object.assign({}, state, JSON.parse(raw)); } }catch(e){ console.log(e); }
-  ensureDefaults();
+function formatTime(iso){
+  try{
+    const d=new Date(iso);
+    return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }catch{return iso;}
 }
-function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.log(e); } }
+
+function renderMultiline(text){
+  // preserve Enter/new lines
+  return escapeHtml(text).replace(/\n/g,"<br>");
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw) state = Object.assign({}, state, JSON.parse(raw));
+  }catch(e){ console.log(e); }
+  ensureDefaults();
+  migrateIfNeeded();
+}
+
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.log(e); }
+}
+
 function ensureDefaults(){
   if(!state.settings) state.settings={appName:"Fischer",theme:"dark",lang:"en",workFilters:{categoryId:"all",personId:"all",priority:"all",status:"all",section:"all"}};
   if(!state.settings.workFilters) state.settings.workFilters={categoryId:"all",personId:"all",priority:"all",status:"all",section:"all"};
@@ -62,23 +88,46 @@ function ensureDefaults(){
   if(!Array.isArray(state.shiftNotes)) state.shiftNotes=[];
   if(!Array.isArray(state.personNotes)) state.personNotes=[];
 }
+
+function migrateIfNeeded(){
+  // migrate from single personId to multi assigneeIds
+  let changed=false;
+  for(const w of state.workItems){
+    if(!Array.isArray(w.assigneeIds)){
+      if(w.personId) w.assigneeIds=[w.personId];
+      else w.assigneeIds=[];
+      changed=true;
+    }
+    if(!w.createdAt){ w.createdAt = w.updatedAt || nowISO(); changed=true; }
+    if(!w.updatedAt){ w.updatedAt = nowISO(); changed=true; }
+  }
+  if(changed) saveState();
+}
+
 function applyTheme(){
   document.body.classList.remove("theme-dark","theme-light","theme-slate");
   const th=state.settings.theme||"dark";
   document.body.classList.add("theme-"+th);
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", th==="light"?"#f4f4f5":"#020617");
 }
+
 function applyNavLabels(){
   const map={dashboard:"nav.dashboard",work:"nav.work",people:"nav.people",settings:"nav.settings"};
-  document.querySelectorAll(".nav-tab").forEach(b=>{ const v=b.getAttribute("data-view"); if(map[v]) b.textContent=t(map[v]); });
+  document.querySelectorAll(".nav-tab").forEach(b=>{
+    const v=b.getAttribute("data-view");
+    if(map[v]) b.textContent=t(map[v]);
+  });
 }
+
 function initApp(){
-  loadState(); applyTheme();
+  loadState();
+  applyTheme();
   document.getElementById("appTitle").textContent=state.settings.appName||"Fischer";
   document.title=state.settings.appName||"Fischer";
   applyNavLabels();
   renderDashboard();
 }
+
 function switchView(view,btn){
   document.querySelectorAll(".nav-tab").forEach(b=>b.classList.remove("active"));
   if(btn) btn.classList.add("active");
@@ -100,12 +149,21 @@ function badgeStatus(s){
 }
 function sectionLabel(sec){ return sec==="post"?t("dashboard.post"):t("dashboard.pre"); }
 
+function peopleBadges(assigneeIds){
+  const ids = Array.isArray(assigneeIds) ? assigneeIds : [];
+  if(!ids.length) return "";
+  const names = ids.map(id=>state.people.find(p=>p.id===id)).filter(Boolean)
+    .map(p=>`${p.name}${p.role?` (${p.role})`:""}`);
+  return names.map(n=>`<span class="badge">${escapeHtml(n)}</span>`).join("");
+}
+
 function renderDashboard(){
   const main=document.getElementById("mainView");
   const pre=state.shiftNotes.filter(n=>n.section==="pre").sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
   const post=state.shiftNotes.filter(n=>n.section==="post").sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
   const high=state.workItems.filter(w=>(w.priority==="high"||w.priority==="critical")&&w.status!=="done").sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
   const kpi={pending:state.workItems.filter(w=>w.status==="pending").length,ongoing:state.workItems.filter(w=>w.status==="ongoing").length,done:state.workItems.filter(w=>w.status==="done").length};
+
   main.innerHTML=`
     <div class="card">
       <div class="card-header">
@@ -124,6 +182,7 @@ function renderDashboard(){
         <span class="badge badge-accent">done: ${kpi.done}</span>
       </div>
     </div>
+
     <div class="grid-2">
       <div class="card">
         <div class="card-header"><div><div class="card-title">${escapeHtml(t("dashboard.pre"))}</div><div class="card-subtitle">${escapeHtml(t("dashboard.addLog"))}</div></div></div>
@@ -134,20 +193,22 @@ function renderDashboard(){
         ${renderNoteList(post)}
       </div>
     </div>
+
     <div class="card">
       <div class="card-header">
-        <div><div class="card-title">${escapeHtml(t("dashboard.high"))}</div><div class="card-subtitle">${escapeHtml(t("work.subtitle"))}</div></div>
-        <button class="btn-secondary" onclick="switchView('work', document.querySelector('[data-view=\'work\']'))">${escapeHtml(t("nav.work"))}</button>
+        <div><div class="card-title">${escapeHtml(t("dashboard.high"))}</div><div class="card-subtitle">${escapeHtml(t("tips.multiAssign"))}</div></div>
+        <button class="btn-secondary" onclick="switchView('work', document.querySelector('[data-view=\\'work\\']'))">${escapeHtml(t("nav.work"))}</button>
       </div>
       ${renderWorkList(high, t("dashboard.empty"))}
     </div>`;
 }
+
 function renderNoteList(list){
   if(!list.length) return `<p class="small-text">${escapeHtml(t("dashboard.empty"))}</p>`;
   return `<div class="task-list">`+list.slice(0,12).map(n=>`
     <div class="task-item">
       <div class="task-main">
-        <div class="task-title">${escapeHtml(n.text)}</div>
+        <div class="task-title" style="white-space:pre-wrap;">${renderMultiline(n.text)}</div>
         <div class="task-meta"><span class="badge">${escapeHtml(sectionLabel(n.section))}</span><span class="badge">${escapeHtml(formatTime(n.createdAt))}</span></div>
       </div>
       <div class="task-actions">
@@ -160,14 +221,19 @@ function renderNoteList(list){
 function renderWork(){
   const main=document.getElementById("mainView");
   const f=state.settings.workFilters;
+
   const list=state.workItems.filter(w=>{
     if(f.categoryId!=="all" && (w.categoryId||"")!==f.categoryId) return false;
-    if(f.personId!=="all" && (w.personId||"")!==f.personId) return false;
+    if(f.personId!=="all"){
+      const ids = Array.isArray(w.assigneeIds)?w.assigneeIds:[];
+      if(!ids.includes(f.personId)) return false;
+    }
     if(f.priority!=="all" && (w.priority||"normal")!==f.priority) return false;
     if(f.status!=="all" && (w.status||"pending")!==f.status) return false;
     if(f.section!=="all" && (w.section||"pre")!==f.section) return false;
     return true;
   }).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+
   main.innerHTML=`
     <div class="card">
       <div class="card-header">
@@ -182,7 +248,7 @@ function renderWork(){
             ${state.categories.map(c=>`<option value="${escapeAttr(c.id)}" ${f.categoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join("")}
           </select>
         </div>
-        <div class="form-row"><label class="form-label">${escapeHtml(t("work.person"))}</label>
+        <div class="form-row"><label class="form-label">${escapeHtml(t("work.people"))}</label>
           <select class="form-select" onchange="setWorkFilter('personId', this.value)">
             <option value="all">${escapeHtml(t("work.all"))}</option>
             ${state.people.map(p=>`<option value="${escapeAttr(p.id)}" ${f.personId===p.id?'selected':''}>${escapeHtml(p.name)}${p.role?` (${escapeHtml(p.role)})`:''}</option>`).join("")}
@@ -220,6 +286,7 @@ function renderWork(){
       ${renderWorkList(list, t("dashboard.empty"))}
     </div>`;
 }
+
 function setWorkFilter(k,v){ state.settings.workFilters[k]=v; saveState(); renderWork(); }
 function clearWorkFilters(){ state.settings.workFilters={categoryId:"all",personId:"all",priority:"all",status:"all",section:"all"}; saveState(); renderWork(); }
 
@@ -227,7 +294,6 @@ function renderWorkList(list, emptyText){
   if(!list.length) return `<p class="small-text">${escapeHtml(emptyText)}</p>`;
   return `<div class="task-list">`+list.map(w=>{
     const cat=state.categories.find(c=>c.id===w.categoryId);
-    const person=state.people.find(p=>p.id===w.personId);
     return `<div class="task-item">
       <div class="task-main">
         <div class="task-title">${escapeHtml(w.title)}</div>
@@ -236,9 +302,9 @@ function renderWorkList(list, emptyText){
           <span class="badge">${escapeHtml(sectionLabel(w.section||"pre"))}</span>
           ${badgePriority(w.priority||"normal")}
           ${badgeStatus(w.status||"pending")}
-          ${person?`<span class="badge">${escapeHtml(person.name)}${person.role?` (${escapeHtml(person.role)})`:''}</span>`:""}
+          ${peopleBadges(w.assigneeIds)}
         </div>
-        ${w.notes?`<div class="small-text" style="margin-top:4px;">${escapeHtml(w.notes)}</div>`:""}
+        ${w.notes?`<div class="small-text" style="margin-top:4px;white-space:pre-wrap;">${renderMultiline(w.notes)}</div>`:""}
       </div>
       <div class="task-actions">
         <button class="btn-small btn-small-accent" onclick="setWorkStatus('${escapeAttr(w.id)}','done')">${escapeHtml(t("common.markDone"))}</button>
@@ -251,11 +317,13 @@ function renderWorkList(list, emptyText){
 
 function openWorkItemModal(id=""){
   const ex=id?state.workItems.find(w=>w.id===id):null;
+  const selected = new Set(Array.isArray(ex?.assigneeIds)?ex.assigneeIds:[]);
   showModal(ex?t("modals.editItem"):t("modals.newItem"),`
     <form id="workItemForm">
       <div class="form-row"><label class="form-label">${escapeHtml(t("common.title"))}</label>
         <input class="form-input" name="title" value="${ex?escapeAttr(ex.title):""}" required>
       </div>
+
       <div class="grid-2">
         <div class="form-row"><label class="form-label">${escapeHtml(t("work.category"))}</label>
           <select class="form-select" name="categoryId">
@@ -263,12 +331,19 @@ function openWorkItemModal(id=""){
             ${state.categories.map(c=>`<option value="${escapeAttr(c.id)}" ${(ex?.categoryId===c.id)?'selected':''}>${escapeHtml(c.name)}</option>`).join("")}
           </select>
         </div>
-        <div class="form-row"><label class="form-label">${escapeHtml(t("work.person"))}</label>
-          <select class="form-select" name="personId">
-            <option value="">${escapeHtml(t("work.none"))}</option>
-            ${state.people.map(p=>`<option value="${escapeAttr(p.id)}" ${(ex?.personId===p.id)?'selected':''}>${escapeHtml(p.name)}${p.role?` (${escapeHtml(p.role)})`:''}</option>`).join("")}
-          </select>
+
+        <div class="form-row"><label class="form-label">${escapeHtml(t("work.people"))}</label>
+          <div class="card" style="padding:8px 10px;">
+            ${state.people.map(p=>`
+              <label style="display:flex;align-items:center;gap:8px;margin:6px 0;">
+                <input type="checkbox" name="assignees" value="${escapeAttr(p.id)}" ${selected.has(p.id)?"checked":""}>
+                <span>${escapeHtml(p.name)}${p.role?` <span class="badge">${escapeHtml(p.role)}</span>`:""}</span>
+              </label>
+            `).join("")}
+            <div class="small-text">${escapeHtml(t("tips.multiAssign"))}</div>
+          </div>
         </div>
+
         <div class="form-row"><label class="form-label">${escapeHtml(t("work.priority"))}</label>
           <select class="form-select" name="priority">
             <option value="normal" ${(ex?.priority||"normal")==="normal"?'selected':''}>${escapeHtml(t("enums.priority.normal"))}</option>
@@ -276,6 +351,7 @@ function openWorkItemModal(id=""){
             <option value="critical" ${ex?.priority==="critical"?'selected':''}>${escapeHtml(t("enums.priority.critical"))}</option>
           </select>
         </div>
+
         <div class="form-row"><label class="form-label">${escapeHtml(t("work.status"))}</label>
           <select class="form-select" name="status">
             <option value="pending" ${(ex?.status||"pending")==="pending"?'selected':''}>${escapeHtml(t("enums.status.pending"))}</option>
@@ -283,6 +359,7 @@ function openWorkItemModal(id=""){
             <option value="done" ${ex?.status==="done"?'selected':''}>${escapeHtml(t("enums.status.done"))}</option>
           </select>
         </div>
+
         <div class="form-row"><label class="form-label">${escapeHtml(t("work.section"))}</label>
           <select class="form-select" name="section">
             <option value="pre" ${(ex?.section||"pre")==="pre"?'selected':''}>${escapeHtml(t("work.pre"))}</option>
@@ -290,6 +367,7 @@ function openWorkItemModal(id=""){
           </select>
         </div>
       </div>
+
       <div class="form-row"><label class="form-label">${escapeHtml(t("common.notes"))} (${escapeHtml(t("common.optional"))})</label>
         <textarea class="form-textarea" name="notes" placeholder="...">${ex?escapeHtml(ex.notes||""):""}</textarea>
       </div>
@@ -297,10 +375,14 @@ function openWorkItemModal(id=""){
     <button class="btn-secondary" onclick="hideModal()">${escapeHtml(t("common.cancel"))}</button>
     <button class="btn-primary" onclick="submitWorkItem('${escapeAttr(id)}')">${escapeHtml(t("common.save"))}</button>`);
 }
+
 function submitWorkItem(id=""){
   const f=document.getElementById("workItemForm"); if(!f) return;
   const title=f.title.value.trim(); if(!title) return;
-  const payload={title,categoryId:f.categoryId.value||"",personId:f.personId.value||"",priority:f.priority.value||"normal",status:f.status.value||"pending",section:f.section.value||"pre",notes:f.notes.value.trim()||""};
+  const assigneeIds = Array.from(f.querySelectorAll('input[name="assignees"]:checked')).map(x=>x.value);
+
+  const payload={title,categoryId:f.categoryId.value||"",assigneeIds,priority:f.priority.value||"normal",status:f.status.value||"pending",section:f.section.value||"pre",notes:(f.notes.value||"")};
+
   if(id){
     const w=state.workItems.find(x=>x.id===id); if(!w) return;
     Object.assign(w,payload); w.updatedAt=nowISO();
@@ -309,12 +391,14 @@ function submitWorkItem(id=""){
   }
   saveState(); hideModal(); renderWork();
 }
+
 function setWorkStatus(id,status){
   const w=state.workItems.find(x=>x.id===id); if(!w) return;
   w.status=status; w.updatedAt=nowISO(); saveState();
   const active=document.querySelector(".nav-tab.active")?.getAttribute("data-view")||"dashboard";
   if(active==="dashboard") renderDashboard(); else if(active==="work") renderWork(); else if(active==="people") renderPeople();
 }
+
 function deleteWorkItem(id){ if(!confirm(t("common.confirmDelete"))) return; state.workItems=state.workItems.filter(x=>x.id!==id); saveState(); renderWork(); }
 
 function openShiftNoteModal(editId=""){
@@ -334,6 +418,7 @@ function openShiftNoteModal(editId=""){
     <button class="btn-secondary" onclick="hideModal()">${escapeHtml(t("common.cancel"))}</button>
     <button class="btn-primary" onclick="submitShiftNote('${escapeAttr(editId)}')">${escapeHtml(t("common.save"))}</button>`);
 }
+
 function submitShiftNote(editId=""){
   const f=document.getElementById("shiftNoteForm"); if(!f) return;
   const text=f.text.value.trim(); if(!text) return; const section=f.section.value||"pre";
@@ -359,34 +444,60 @@ function openCloseShiftModal(){
     <button class="btn-secondary" onclick="hideModal()">${escapeHtml(t("common.cancel"))}</button>
     <button class="btn-primary" onclick="closeShiftNow()">${escapeHtml(t("dashboard.closeShift"))}</button>`);
 }
+
 function closeShiftNow(){
-  const extra=document.getElementById("closeShiftForm")?.text?.value?.trim()||"";
+  const extra=document.getElementById("closeShiftForm")?.text?.value||"";
   const stamp=nowISO(); state.lastShiftClose=stamp; saveState(); hideModal();
+
   const lines=[];
   lines.push(`${state.settings.appName} - Shift report`);
   lines.push(`Date: ${todayISO()}`);
-  lines.push(`Closed at: ${stamp}`); lines.push("");
+  lines.push(`Closed at: ${stamp}`);
+  lines.push("");
+
   lines.push("=== Before 00:00 notes ===");
-  state.shiftNotes.filter(n=>n.section==="pre").sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).forEach(n=>lines.push(`- [${formatTime(n.createdAt)}] ${n.text}`));
-  lines.push(""); lines.push("=== After 00:00 notes ===");
-  state.shiftNotes.filter(n=>n.section==="post").sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).forEach(n=>lines.push(`- [${formatTime(n.createdAt)}] ${n.text}`));
-  lines.push(""); lines.push("=== Work items (open) ===");
-  state.workItems.filter(w=>w.status!=="done").sort((a,b)=>a.updatedAt.localeCompare(b.updatedAt)).forEach(w=>{
-    const cat=state.categories.find(c=>c.id===w.categoryId)?.name||""; const per=state.people.find(p=>p.id===w.personId);
-    lines.push(`- ${w.title} | ${cat} | ${w.priority} | ${w.status} | ${w.section}${per?(" | "+per.name):""}`);
-    if(w.notes) lines.push(`  note: ${w.notes}`);
+  state.shiftNotes.filter(n=>n.section==="pre").sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).forEach(n=>{
+    n.text.split("\n").forEach((ln,i)=>lines.push(i===0?`- [${formatTime(n.createdAt)}] ${ln}`:`  ${ln}`));
   });
-  lines.push(""); lines.push("=== People notes ===");
+
+  lines.push("");
+  lines.push("=== After 00:00 notes ===");
+  state.shiftNotes.filter(n=>n.section==="post").sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).forEach(n=>{
+    n.text.split("\n").forEach((ln,i)=>lines.push(i===0?`- [${formatTime(n.createdAt)}] ${ln}`:`  ${ln}`));
+  });
+
+  lines.push("");
+  lines.push("=== Work items (open) ===");
+  state.workItems.filter(w=>w.status!=="done").sort((a,b)=>a.updatedAt.localeCompare(b.updatedAt)).forEach(w=>{
+    const cat=state.categories.find(c=>c.id===w.categoryId)?.name||"";
+    const names=(Array.isArray(w.assigneeIds)?w.assigneeIds:[]).map(id=>state.people.find(p=>p.id===id)?.name).filter(Boolean).join(", ");
+    lines.push(`- ${w.title} | ${cat} | ${w.priority} | ${w.status} | ${w.section}${names?(" | "+names):""}`);
+    if(w.notes){
+      w.notes.split("\n").forEach((ln,i)=>lines.push(i===0?`  note: ${ln}`:`        ${ln}`));
+    }
+  });
+
+  lines.push("");
+  lines.push("=== People notes ===");
   state.people.forEach(p=>{
     const notes=state.personNotes.filter(n=>n.personId===p.id).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
     if(!notes.length) return;
     lines.push(`-- ${p.name}${p.role?(" ("+p.role+")"):""} --`);
-    notes.forEach(n=>lines.push(`  - [${formatTime(n.createdAt)}] ${n.text}`));
+    notes.forEach(n=>{
+      n.text.split("\n").forEach((ln,i)=>lines.push(i===0?`  - [${formatTime(n.createdAt)}] ${ln}`:`               ${ln}`));
+    });
   });
-  if(extra){ lines.push(""); lines.push("=== Extra summary ==="); lines.push(extra); }
+
+  if(extra && extra.trim()){
+    lines.push("");
+    lines.push("=== Extra summary ===");
+    extra.split("\n").forEach(ln=>lines.push(ln));
+  }
+
   downloadText(lines.join("\n"), `shift_report_${todayISO()}.txt`);
   renderDashboard();
 }
+
 function downloadText(text, filename){
   const blob=new Blob([text],{type:"text/plain"});
   const url=URL.createObjectURL(blob);
@@ -398,7 +509,7 @@ function renderPeople(){
   const main=document.getElementById("mainView");
   const cards=state.people.map(p=>{
     const notes=state.personNotes.filter(n=>n.personId===p.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
-    const linked=state.workItems.filter(w=>w.personId===p.id).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+    const linked=state.workItems.filter(w=>(Array.isArray(w.assigneeIds)?w.assigneeIds:[]).includes(p.id)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
     return `<div class="card">
       <div class="card-header">
         <div><div class="card-title">${escapeHtml(p.name)}${p.role?` <span class="badge">${escapeHtml(p.role)}</span>`:""}</div>
@@ -412,14 +523,15 @@ function renderPeople(){
     </div>`;
   }).join("");
   main.innerHTML=`<div class="card"><div class="card-header"><div><div class="card-title">${escapeHtml(t("people.title"))}</div><div class="card-subtitle">${escapeHtml(t("people.subtitle"))}</div></div></div>
-    <p class="small-text">Tip: assign work items to people + add person notes.</p></div>${cards}`;
+    <p class="small-text">${escapeHtml(t("tips.multiAssign"))}</p></div>${cards}`;
 }
+
 function renderPersonNoteList(list, personId){
   if(!list.length) return `<p class="small-text">${escapeHtml(t("people.empty"))}</p>`;
   return `<div class="task-list">`+list.slice(0,10).map(n=>`
     <div class="task-item">
       <div class="task-main">
-        <div class="task-title">${escapeHtml(n.text)}</div>
+        <div class="task-title" style="white-space:pre-wrap;">${renderMultiline(n.text)}</div>
         <div class="task-meta"><span class="badge">${escapeHtml(formatTime(n.createdAt))}</span></div>
       </div>
       <div class="task-actions">
@@ -428,6 +540,7 @@ function renderPersonNoteList(list, personId){
       </div>
     </div>`).join("")+`</div>`;
 }
+
 function openPersonNoteModal(personId, noteId=""){
   const person=state.people.find(p=>p.id===personId);
   const ex=noteId?state.personNotes.find(n=>n.id===noteId):null;
@@ -441,6 +554,7 @@ function openPersonNoteModal(personId, noteId=""){
     <button class="btn-secondary" onclick="hideModal()">${escapeHtml(t("common.cancel"))}</button>
     <button class="btn-primary" onclick="submitPersonNote('${escapeAttr(personId)}','${escapeAttr(noteId)}')">${escapeHtml(t("common.save"))}</button>`);
 }
+
 function submitPersonNote(personId, noteId=""){
   const f=document.getElementById("personNoteForm"); if(!f) return;
   const text=f.text.value.trim(); if(!text) return;
@@ -526,6 +640,7 @@ function renderSettings(){
       <button class="btn-small btn-small-danger" onclick="resetAll()">${escapeHtml(t("settings.reset"))}</button>
     </div>`;
 }
+
 function renderCategoryManager(){
   return `<div class="task-list">`+state.categories.map(c=>`
     <div class="task-item">
@@ -536,6 +651,7 @@ function renderCategoryManager(){
       </div>
     </div>`).join("")+`</div>`;
 }
+
 function openCategoryModal(catId=""){
   const ex=catId?state.categories.find(c=>c.id===catId):null;
   showModal(ex?t("modals.editCategory"):t("modals.newCategory"),`
@@ -560,6 +676,7 @@ function deleteCategory(catId){
   state.workItems.forEach(w=>{ if(w.categoryId===catId) w.categoryId=""; });
   saveState(); renderSettings();
 }
+
 function renderPeopleManager(){
   return `<div class="task-list">`+state.people.map(p=>`
     <div class="task-item">
@@ -590,7 +707,7 @@ function deletePerson(personId){
   const p=state.people.find(x=>x.id===personId); if(!p) return;
   if(!confirm(t("common.confirmDelete")+" "+p.name)) return;
   state.people=state.people.filter(x=>x.id!==personId);
-  state.workItems.forEach(w=>{ if(w.personId===personId) w.personId=""; });
+  state.workItems.forEach(w=>{ w.assigneeIds=(Array.isArray(w.assigneeIds)?w.assigneeIds:[]).filter(id=>id!==personId); });
   state.personNotes=state.personNotes.filter(n=>n.personId!==personId);
   saveState(); renderSettings();
 }
@@ -601,10 +718,17 @@ function updateAppName(e){ e.preventDefault(); const name=e.target.appName.value
   alert("Saved.");
 }
 function updateTheme(e){ e.preventDefault(); state.settings.theme=e.target.theme.value; saveState(); applyTheme(); alert("Saved."); }
-function updateLanguage(e){ e.preventDefault(); state.settings.lang=e.target.lang.value; saveState(); applyNavLabels();
+function updateLanguage(e){
+  e.preventDefault();
+  state.settings.lang=e.target.lang.value; saveState();
+  applyNavLabels();
   const active=document.querySelector(".nav-tab.active")?.getAttribute("data-view")||"dashboard";
-  if(active==="dashboard") renderDashboard(); else if(active==="work") renderWork(); else if(active==="people") renderPeople(); else renderSettings();
+  if(active==="dashboard") renderDashboard();
+  else if(active==="work") renderWork();
+  else if(active==="people") renderPeople();
+  else renderSettings();
 }
+
 function exportData(){ const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="fischer_backup.json"; a.click(); URL.revokeObjectURL(url); }
 function importData(evt){
   const file=evt.target.files[0]; if(!file) return;
@@ -613,7 +737,8 @@ function importData(evt){
     try{
       const loaded=JSON.parse(e.target.result);
       if(!confirm("Replace current data with imported data?")) return;
-      state=Object.assign({}, state, loaded); ensureDefaults(); saveState(); applyTheme(); applyNavLabels();
+      state=Object.assign({}, state, loaded);
+      ensureDefaults(); migrateIfNeeded(); saveState(); applyTheme(); applyNavLabels();
       document.getElementById("appTitle").textContent=state.settings.appName||"Fischer"; document.title=state.settings.appName||"Fischer";
       renderDashboard();
     }catch(err){ alert("Import failed."); }
